@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="./gerb fsin.svg" type="image/x-icon">
+<title>Учёт ПК и принтеров</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <img style="padding: 3px;" src="./gerb fsin.svg" alt="Логотип" class="brand-mark">
+        <div>
+          <div class="brand-title">Учёт техники</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#/dashboard" class="nav-link" data-route="dashboard">Дашборд</a>
+        <a href="#/branches" class="nav-link" data-route="branches">Филиалы</a>
+        <a href="#/devices" class="nav-link" data-route="devices">Все устройства</a>
+        <a href="#/export" class="nav-link" data-route="export">Экспорт в Excel</a>
+        <a href="http://10.22.77.13:8080" class="nav-link" target="_blank">📚 База знаний</a>
+      </nav>
+
+      <div class="sidebar-footer">Всего устройств в системе: <span id="sidebarTotal">—</span></div>
+    </aside>
+
+    <main class="content">
+      <div id="repairBanner" class="banner hidden"></div>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <div id="modalRoot"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script> <!--Export in Exel-->
+  <script src="/js/marked.min.js"></script>
+  <script src="/js/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+services:
+  pc-tracker:
+    build: .
+    container_name: pc-tracker
+    restart: unless-stopped
+    ports:
+      - "3123:3123"
+    volumes:
+      - ./data:/app/data

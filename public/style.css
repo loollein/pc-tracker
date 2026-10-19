@@ -1,0 +1,449 @@
+:root {
+  --bg: #f3f5f9;
+  --panel: #ffffff;
+  --ink: #16203a;
+  --ink-dim: #5a6786;
+  --line: #e2e6ef;
+  --brand: #2454b8;
+  --brand-dim: #eaf0fc;
+  --sidebar: #101a30;
+  --sidebar-line: #253253;
+  --ok: #1a8f4c;
+  --ok-bg: #e7f7ee;
+  --warn: #b8730a;
+  --warn-bg: #fdf1de;
+  --off: #6b7488;
+  --off-bg: #eceff4;
+  --danger: #c22b3a;
+  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  --radius: 10px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 14.5px;
+}
+
+.app { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--sidebar);
+  color: #cdd7f0;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 22px; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: linear-gradient(145deg, #3868d6, #1c3a80);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #fff; flex-shrink: 0;
+}
+.brand-title { font-weight: 700; font-size: 14.5px; color: #fff; }
+.brand-sub { font-size: 11.5px; color: #8b9ac2; }
+
+.nav { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.nav-link {
+  color: #b9c4e4; text-decoration: none; padding: 10px 12px;
+  border-radius: 8px; font-size: 14px; font-weight: 500;
+  border-left: 3px solid transparent;
+}
+.nav-link:hover { background: #17233f; color: #fff; }
+.nav-link.active { background: #17233f; color: #fff; border-left-color: #4c7de8; }
+
+.sidebar-footer {
+  margin-top: auto; padding-top: 16px; border-top: 1px solid var(--sidebar-line);
+  font-size: 12px; color: #8b9ac2;
+}
+#sidebarTotal { color: #fff; font-weight: 700; }
+
+/* Content */
+.content { flex: 1; padding: 26px 32px; max-width: 1920px; }
+
+h1 { font-size: 21px; margin: 0 0 4px; }
+h2 { font-size: 16px; margin: 0 0 12px; }
+.subtitle { color: var(--ink-dim); font-size: 13.5px; margin: 0 0 22px; }
+
+.page-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+
+/* Banner */
+.banner {
+  background: var(--warn-bg); border: 1px solid #f0dcb5; color: #7a4f08;
+  border-radius: var(--radius); padding: 12px 16px; margin-bottom: 20px;
+  font-size: 13.5px; display: flex; align-items: center; gap: 10px;
+}
+.banner.hidden { display: none; }
+.banner strong { font-weight: 700; }
+.banner a { color: #7a4f08; font-weight: 600; }
+
+/* Cards / stat grid */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 26px; }
+.stat-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px;
+}
+.stat-card .num { font-size: 26px; font-weight: 700; line-height: 1.1; }
+.stat-card .label { font-size: 12.5px; color: var(--ink-dim); margin-top: 4px; }
+.stat-card.ok .num { color: var(--ok); }
+.stat-card.warn .num { color: var(--warn); }
+.stat-card.off .num { color: var(--off); }
+
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px 20px; margin-bottom: 20px;
+}
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th {
+  text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--ink-dim); font-weight: 600; padding: 9px 10px; border-bottom: 1px solid var(--line);
+}
+td { padding: 10px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr.clickable:hover { background: #f8faff; cursor: pointer; }
+.mono { font-family: var(--mono); font-size: 10px; color: var(--ink-dim); }
+
+/* Status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px;
+  border-radius: 999px; font-size: 12px; font-weight: 600;
+}
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+.badge.working { background: var(--ok-bg); color: var(--ok); }
+.badge.working::before { background: var(--ok); }
+.badge.repair { background: var(--warn-bg); color: var(--warn); }
+.badge.repair::before { background: var(--warn); }
+.badge.decommissioned { background: var(--off-bg); color: var(--off); }
+.badge.decommissioned::before { background: var(--off); }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
+  border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink);
+  font-size: 13.5px; font-weight: 600; cursor: pointer; text-decoration: none;
+}
+.btn:hover { border-color: #c7cfe2; }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn.primary:hover { background: #1d45a0; }
+.btn.danger { color: var(--danger); }
+.btn.small { padding: 5px 10px; font-size: 12.5px; }
+.btn.ghost { border-color: transparent; background: transparent; }
+
+/* Breadcrumb */
+.breadcrumb { font-size: 13px; color: var(--ink-dim); margin-bottom: 10px; }
+.breadcrumb a { color: var(--brand); text-decoration: none; }
+
+/* Cards list (branches) */
+.card-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.card-item {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; text-decoration: none; color: var(--ink); display: block;
+}
+.card-item:hover { border-color: var(--brand); }
+.card-item .title { font-weight: 700; font-size: 14.5px; margin-bottom: 8px; }
+.card-item .meta { font-size: 12.5px; color: var(--ink-dim); display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Forms / modal */
+.overlay {
+  position: fixed; inset: 0; background: rgba(15, 20, 35, 0.45);
+  display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px;
+}
+/* ==================== Модальные окна и Оверлей =================== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 20, 35, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 520px;          /* Увеличили ширину для комфортного размещения полей и истории */
+  max-height: 85vh;          /* Жестко ограничиваем высоту по экрану */
+  display: flex;
+  flex-direction: column;    /* Выстраиваем элементы колонкой (Шапка -> Контент -> Кнопки) */
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  overflow: hidden;          /* Запрещаем вылетать за скругленные углы */
+}
+
+/* Фиксированная шапка модального окна */
+.modal h3 {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 20px 24px 12px 24px;
+  font-size: 18px;
+  border-bottom: 1px solid var(--border, #eee);
+}
+
+/* Форма теперь находится внутри модалки и прокручивается вертикально */
+.modal form {
+  overflow-y: auto;          /* Включаем скролл, если контент не помещается */
+  flex-grow: 1;              /* Занимает всё доступное пространство по высоте */
+  padding: 16px 24px;
+}
+
+/* Кастомизированный скроллбар для формы и истории */
+.modal form::-webkit-scrollbar,
+.device-history-list div::-webkit-scrollbar {
+  width: 6px;
+}
+.modal form::-webkit-scrollbar-thumb,
+.device-history-list div::-webkit-scrollbar-thumb {
+  background: var(--border, #ccc);
+  border-radius: 3px;
+}
+
+/* Поля ввода */
+.field { 
+  margin-bottom: 14px; 
+}
+
+.field label { 
+  display: block; 
+  font-size: 12.5px; 
+  font-weight: 600; 
+  color: var(--ink-dim); 
+  margin-bottom: 5px; 
+}
+
+.field input, 
+.field select,
+.field textarea {
+  width: 100%; 
+  padding: 9px 11px; 
+  border: 1px solid var(--line); 
+  border-radius: 8px;
+  font-size: 13.5px; 
+  font-family: inherit; 
+  color: var(--ink);
+  background: #fff;
+}
+
+.field input:focus, 
+.field select:focus,
+.field textarea:focus { 
+  outline: 2px solid var(--brand); 
+  outline-offset: 1px; 
+  border-color: var(--brand); 
+}
+
+/* Блок с кнопками снизу (всегда на виду) */
+.modal-actions { 
+  flex-shrink: 0;
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 8px; 
+  padding: 12px 24px 20px 24px;
+  border-top: 1px solid var(--border, #eee);
+  background: #fff;
+}
+
+.error-text { 
+  color: var(--danger); 
+  font-size: 12.5px; 
+  margin-top: 8px; 
+}
+
+/* ==================== Тулбар и Состояния =================== */
+.toolbar { 
+  display: flex; 
+  gap: 10px; 
+  margin-bottom: 16px; 
+  flex-wrap: wrap; 
+  align-items: center; 
+}
+
+.toolbar select, 
+.toolbar input[type="text"] {
+  padding: 8px 11px; 
+  border: 1px solid var(--line); 
+  border-radius: 8px; 
+  font-size: 13.5px;
+}
+
+.empty-state { 
+  text-align: center; 
+  padding: 40px 20px; 
+  color: var(--ink-dim); 
+}
+
+@media (max-width: 720px) {
+  .app { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; padding: 14px 16px; }
+  .nav { flex-direction: row; margin-top: 0; margin-left: auto; }
+  .sidebar-footer { display: none; }
+  .content { padding: 18px; }
+}
+
+/* Дополнительные улучшения для экспорта */
+.export-mun-row {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 4px;
+}
+.export-mun-row:last-child {
+  border-bottom: none;
+}
+.export-mun-row:hover, .export-settl-row:hover {
+  background: var(--brand-dim);
+  border-radius: 4px;
+}
+.export-settl-row {
+  padding-left: 36px; /* чуть больше отступ */
+}
+.export-mun-row input[type="checkbox"],
+.export-settl-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+}
+.export-tree-count {
+  background: var(--off-bg);
+  padding: 0 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 20px;
+}
+
+/* Дерево экспорта */
+.export-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  max-height: 65vh;
+  overflow: auto;
+}
+.export-mun-wrapper {
+  margin-bottom: 4px;
+}
+.export-mun-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.export-mun-row:hover {
+  background: var(--brand-dim);
+}
+.export-mun-row .chevron {
+  font-size: 11px;
+  color: var(--ink-dim);
+  min-width: 16px;
+  text-align: center;
+  user-select: none;
+}
+.export-mun-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.export-mun-row .mun-name {
+  flex: 1;
+}
+.export-settl-container {
+  margin-left: 28px;
+  border-left: 2px solid var(--line);
+  padding-left: 12px;
+}
+.export-settl-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  font-size: 13.5px;
+  color: var(--ink-dim);
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.export-settl-row:hover {
+  background: var(--bg);
+}
+.export-settl-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.export-tree-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+.export-actions {
+  display: flex;
+  gap: 10px;
+  margin: 12px 0 16px;
+  flex-wrap: wrap;
+}
+.export-info {
+  font-size: 13px;
+  color: var(--ink-dim);
+  margin-top: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+
+/* Ограничение таблицы */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Фиксированная ширина колонок и обрезка текста */
+.devices-table th,
+.devices-table td {
+  max-width: 150px;          /* максимальная ширина ячейки */
+  min-width: 60px;           /* минимальная ширина (можно подкрутить) */
+  white-space: nowrap;       /* текст не переносится */
+  overflow: hidden;          /* скрываем лишнее */
+  text-overflow: ellipsis;   /* добавляем многоточие */
+}
+
+/* Для колонки "Примечание" можно разрешить перенос и увеличить ширину */
+.devices-table td:nth-child(10) { /* номер колонки зависит от структуры */
+  white-space: normal;
+  max-width: 200px;
+}
+
+/* Для кнопок "Подключиться" и "Изменить" – убираем ограничения */
+.devices-table td:last-child,
+.devices-table td:nth-last-child(2) {
+  white-space: nowrap;
+  max-width: none;
+  min-width: auto;
+}
+
+/* Подсказка при наведении (если текст не помещается) */
+.devices-table td[title] {
+  cursor: help;
+}

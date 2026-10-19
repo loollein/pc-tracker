@@ -1,0 +1,16 @@
+{
+  "name": "pc-tracker",
+  "version": "1.0.0",
+  "description": "Учёт ПК и принтеров по муниципальным филиалам и населённым пунктам",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "seed": "node server/seed.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "express": "^4.19.2",
+    "multer": "^2.2.0",
+    "python": "^0.0.4"
+  }
+}

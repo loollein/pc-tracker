@@ -1,0 +1,884 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+  :root{
+    --bg:#eef2f6;
+    --panel:#ffffff;
+    --sidebar-1:#0b1220;
+    --sidebar-2:#16233b;
+    --accent:#06b6d4;
+    --accent-dark:#0891b2;
+    --text:#1b2432;
+    --muted:#64748b;
+    --border:#e1e7ef;
+    --ok:#15803d;
+    --ok-bg:#e7f6ec;
+    --warn:#b45309;
+    --warn-bg:#fef3e2;
+    --danger:#b91c1c;
+    --dead:#6b7280;
+    --dead-bg:#eef0f2;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    font-size:14px;
+  }
+  .mono{font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;}
+  #app{display:flex;min-height:100vh;}
+
+  /* SIDEBAR */
+  .sidebar{
+    width:230px;
+    flex-shrink:0;
+    background:linear-gradient(180deg,var(--sidebar-1),var(--sidebar-2));
+    color:#cbd5e1;
+    padding:20px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .brand{
+    display:flex;align-items:center;gap:10px;
+    padding:0 6px 18px 6px;
+    margin-bottom:10px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+  }
+  .brand-led{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex-shrink:0;}
+  .brand-text{font-weight:700;font-size:14px;color:#f1f5f9;line-height:1.2;}
+  .brand-sub{font-size:10.5px;color:#7d8ba3;font-family:'JetBrains Mono',monospace;letter-spacing:0.3px;}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 10px;border-radius:8px;
+    cursor:pointer;color:#a9b6cc;font-weight:500;font-size:13.5px;
+    transition:background .15s,color .15s;
+  }
+  .nav-item svg{opacity:0.8;flex-shrink:0;}
+  .nav-item:hover{background:rgba(255,255,255,0.06);color:#e2e8f0;}
+  .nav-item.active{background:rgba(6,182,212,0.16);color:#5eead4;}
+  .nav-item.active svg{opacity:1;}
+  .nav-badge{
+    margin-left:auto;background:var(--warn);color:#fff;font-size:10.5px;font-weight:700;
+    padding:1px 6px;border-radius:20px;
+  }
+  .sidebar-footer{margin-top:auto;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);font-size:11px;color:#5b6b85;}
+
+  /* MAIN */
+  .main{flex:1;min-width:0;padding:26px 32px;}
+  .page-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+  .page-title{font-size:21px;font-weight:800;letter-spacing:-0.2px;}
+  .page-desc{color:var(--muted);font-size:13px;margin-top:2px;}
+
+  .btn{
+    border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;
+    cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:transform .1s,box-shadow .15s;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-accent{background:var(--accent);color:#04202a;}
+  .btn-accent:hover{background:var(--accent-dark);color:#fff;}
+  .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border);}
+  .btn-ghost:hover{background:#f5f7fa;}
+  .btn-danger{background:#fde8e8;color:var(--danger);}
+  .btn-danger:hover{background:#fbd3d3;}
+  .btn-sm{padding:5px 9px;font-size:12px;border-radius:6px;}
+  .icon-btn{
+    width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:#fff;
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);
+  }
+  .icon-btn:hover{background:#f5f7fa;color:var(--text);}
+
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);}
+
+  /* Dashboard */
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+  .stat-card{padding:16px 18px;}
+  .stat-label{font-size:11.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;}
+  .stat-value{font-size:26px;font-weight:800;margin-top:6px;font-family:'JetBrains Mono',monospace;}
+  .stat-value.ok{color:var(--ok);}
+  .stat-value.warn{color:var(--warn);}
+  .stat-value.dead{color:var(--dead);}
+
+  .alert-banner{
+    display:flex;align-items:flex-start;gap:12px;
+    background:var(--warn-bg);border:1px solid #f6dcae;color:#7a3e07;
+    border-radius:var(--radius);padding:14px 16px;margin-bottom:20px;
+  }
+  .alert-banner svg{flex-shrink:0;margin-top:2px;}
+  .alert-banner .alert-title{font-weight:700;font-size:13.5px;}
+  .alert-banner .alert-list{margin-top:6px;font-size:12.5px;line-height:1.7;}
+  .alert-banner .alert-list .mono{font-weight:600;}
+  .alert-dismiss{margin-left:auto;flex-shrink:0;}
+
+  table{width:100%;border-collapse:collapse;}
+  thead th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);
+    padding:10px 14px;border-bottom:1px solid var(--border);font-weight:700;white-space:nowrap;
+  }
+  tbody td{padding:10px 14px;border-bottom:1px solid #f0f2f5;font-size:13px;vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#fafbfd;}
+
+  .led{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px;flex-shrink:0;}
+  .led.ok{background:var(--ok);box-shadow:0 0 5px rgba(21,128,61,0.6);}
+  .led.warn{background:var(--warn);box-shadow:0 0 5px rgba(180,83,9,0.6);}
+  .led.dead{background:var(--dead);}
+
+  .status-pill{
+    display:inline-flex;align-items:center;padding:3px 9px 3px 7px;border-radius:20px;font-size:12px;font-weight:600;
+  }
+  .status-pill.ok{background:var(--ok-bg);color:var(--ok);}
+  .status-pill.warn{background:var(--warn-bg);color:var(--warn);}
+  .status-pill.dead{background:var(--dead-bg);color:var(--dead);}
+
+  .mini-bar{display:flex;height:6px;width:100%;border-radius:4px;overflow:hidden;background:#eef0f3;min-width:80px;}
+  .mini-bar span{height:100%;}
+
+  /* Devices layout */
+  .devices-layout{display:grid;grid-template-columns:270px 1fr;gap:18px;align-items:start;}
+  .tree-panel{padding:14px;max-height:calc(100vh - 140px);overflow:auto;}
+  .tree-panel-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .tree-panel-head h3{font-size:12px;text-transform:uppercase;letter-spacing:0.4px;color:var(--muted);margin:0;}
+  .tree-mun{margin-bottom:4px;}
+  .tree-mun-row{
+    display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:7px;cursor:pointer;font-weight:600;font-size:13px;
+  }
+  .tree-mun-row:hover{background:#f5f7fa;}
+  .tree-mun-row .chev{transition:transform .15s;color:var(--muted);flex-shrink:0;}
+  .tree-mun-row.collapsed .chev{transform:rotate(-90deg);}
+  .tree-actions{display:none;gap:4px;margin-left:auto;}
+  .tree-mun-row:hover .tree-actions, .tree-settl-row:hover .tree-actions{display:flex;}
+  .tree-settl-list{margin-left:16px;border-left:2px solid var(--border);padding-left:8px;}
+  .tree-settl-row{
+    display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:7px;cursor:pointer;font-size:12.8px;color:#3a4657;
+  }
+  .tree-settl-row:hover{background:#f5f7fa;}
+  .tree-settl-row.active{background:rgba(6,182,212,0.14);color:var(--accent-dark);font-weight:600;}
+  .tree-count{margin-left:auto;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+  .empty-tree-hint{font-size:12px;color:var(--muted);padding:10px 4px;}
+
+  .devices-panel-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);}
+  .devices-panel-head h3{margin:0;font-size:14.5px;font-weight:700;}
+  .devices-panel-head .crumb{font-size:12px;color:var(--muted);font-weight:400;}
+  .device-type-icon{display:inline-flex;vertical-align:middle;margin-right:6px;color:var(--muted);}
+  .empty-state{padding:40px 20px;text-align:center;color:var(--muted);font-size:13px;}
+  .empty-state svg{margin-bottom:10px;opacity:0.5;}
+
+  /* Export */
+  .export-tree{padding:16px;max-height:420px;overflow:auto;}
+  .export-mun-row{display:flex;align-items:center;gap:8px;padding:6px 4px;font-weight:600;font-size:13px;}
+  .export-settl-row{display:flex;align-items:center;gap:8px;padding:5px 4px 5px 26px;font-size:12.8px;color:#3a4657;}
+  .export-settl-row .tree-count{margin-left:auto;}
+  input[type=checkbox]{width:15px;height:15px;accent-color:var(--accent-dark);cursor:pointer;}
+
+  /* Modal */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(15,23,42,0.45);display:flex;align-items:center;justify-content:center;
+    z-index:100;
+  }
+  .modal-box{background:#fff;border-radius:12px;width:380px;max-width:92vw;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,0.25);}
+  .modal-box h3{margin:0 0 16px 0;font-size:16px;}
+  .field{margin-bottom:13px;}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;}
+  .field input,.field select{
+    width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:13.5px;font-family:inherit;
+  }
+  .field input.mono{font-family:'JetBrains Mono',monospace;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(6,182,212,0.15);}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+
+  .toast{
+    position:fixed;top:20px;right:20px;background:#0b1220;color:#e2e8f0;padding:14px 18px;border-radius:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.3);z-index:200;max-width:320px;font-size:13px;display:flex;gap:10px;align-items:flex-start;
+    animation:slideIn .25s ease;
+  }
+  @keyframes slideIn{from{transform:translateX(20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  .toast svg{flex-shrink:0;color:var(--warn);margin-top:1px;}
+  .toast .toast-close{margin-left:auto;cursor:pointer;color:#94a3b8;flex-shrink:0;}
+
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}
+</style>
+
+<div id="app">
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-led"></div>
+      <div>
+        <div class="brand-text">Учёт техники</div>
+        <div class="brand-sub">v1.0 / admin</div>
+      </div>
+    </div>
+    <div class="nav-item" data-nav="dashboard">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+      Дашборд
+    </div>
+    <div class="nav-item" data-nav="devices">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Филиалы и устройства
+    </div>
+    <div class="nav-item" data-nav="export">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+      Экспорт в Excel
+      <span class="nav-badge" id="repair-badge" style="display:none;"></span>
+    </div>
+    <div class="sidebar-footer">Данные хранятся локально в этом приложении.</div>
+  </div>
+  <div class="main" id="main"></div>
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'inventory-data-v1';
+  const DISMISS_KEY = 'inventory-notif-dismiss-date';
+
+  const STATUS = {
+    working: {label:'Работает', cls:'ok'},
+    repair: {label:'На ремонте', cls:'warn'},
+    decommissioned: {label:'Списан', cls:'dead'}
+  };
+  const TYPE_LABEL = {pc:'ПК', printer:'Принтер'};
+
+  let state = null; // {municipals:[], settlements:[], devices:[]}
+  let ui = {
+    tab:'dashboard',
+    collapsedMunicipals:{},
+    selectedSettlementId:null,
+    selectedMunicipalOnly:null,
+    exportSelection:{} // settlementId -> true
+  };
+
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+
+  function seedData(){
+    const m1 = uid(), m2 = uid();
+    const s1 = uid(), s2 = uid(), s3 = uid();
+    return {
+      municipals: [
+        {id:m1, name:'Центральный муниципальный округ'},
+        {id:m2, name:'Северный муниципальный округ'}
+      ],
+      settlements: [
+        {id:s1, municipalId:m1, name:'г. Заречное'},
+        {id:s2, municipalId:m1, name:'пос. Луговой'},
+        {id:s3, municipalId:m2, name:'г. Северск'}
+      ],
+      devices: [
+        {id:uid(), settlementId:s1, type:'pc', invNumber:'ИН-000112', name:'ПК-Бухгалтерия-01', ip:'10.10.1.12', status:'working'},
+        {id:uid(), settlementId:s1, type:'printer', invNumber:'ИН-000145', name:'HP LaserJet-Приемная', ip:'10.10.1.40', status:'repair'},
+        {id:uid(), settlementId:s2, type:'pc', invNumber:'ИН-000201', name:'ПК-Секретарь', ip:'10.10.2.5', status:'working'},
+        {id:uid(), settlementId:s3, type:'pc', invNumber:'ИН-000330', name:'ПК-Архив-02', ip:'10.20.1.8', status:'decommissioned'}
+      ]
+    };
+  }
+
+  async function loadState(){
+    try{
+      const res = await window.storage.get(STORAGE_KEY, false);
+      if(res && res.value){
+        state = JSON.parse(res.value);
+        return;
+      }
+    }catch(e){ /* not found */ }
+    state = seedData();
+    await persist();
+  }
+
+  async function persist(){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+    }catch(e){
+      console.error('Storage error', e);
+    }
+  }
+
+  function icon(name){
+    if(name==='pc'){
+      return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>';
+    }
+    return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-6a1 1 0 011-1h16a1 1 0 011 1v6a1 1 0 01-1 1h-2"/><rect x="6" y="14" width="12" height="7"/></svg>';
+  }
+
+  function escapeHtml(str){
+    return String(str==null?'':str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- computed helpers ----------
+  function devicesOfSettlement(sid){ return state.devices.filter(d => d.settlementId === sid); }
+  function settlementsOfMunicipal(mid){ return state.settlements.filter(s => s.municipalId === mid); }
+  function devicesOfMunicipal(mid){
+    const sids = settlementsOfMunicipal(mid).map(s=>s.id);
+    return state.devices.filter(d => sids.includes(d.settlementId));
+  }
+  function countByStatus(devices){
+    const c = {working:0, repair:0, decommissioned:0};
+    devices.forEach(d => c[d.status]++);
+    return c;
+  }
+  function allRepairDevices(){
+    return state.devices.filter(d => d.status==='repair').map(d => {
+      const settl = state.settlements.find(s=>s.id===d.settlementId);
+      const mun = settl ? state.municipals.find(m=>m.id===settl.municipalId) : null;
+      return {...d, settlementName: settl?settl.name:'—', municipalName: mun?mun.name:'—'};
+    });
+  }
+
+  // ---------- rendering ----------
+  function render(){
+    document.querySelectorAll('.nav-item').forEach(el=>{
+      el.classList.toggle('active', el.dataset.nav===ui.tab);
+    });
+    const repairCount = state.devices.filter(d=>d.status==='repair').length;
+    const badge = document.getElementById('repair-badge');
+    if(repairCount>0){ badge.style.display='inline-block'; badge.textContent=repairCount; } else { badge.style.display='none'; }
+
+    const main = document.getElementById('main');
+    if(ui.tab==='dashboard') main.innerHTML = renderDashboard();
+    else if(ui.tab==='devices') main.innerHTML = renderDevices();
+    else if(ui.tab==='export') main.innerHTML = renderExport();
+    attachHandlers();
+  }
+
+  function statPill(status){
+    const s = STATUS[status];
+    return `<span class="status-pill ${s.cls}"><span class="led ${s.cls}"></span>${s.label}</span>`;
+  }
+
+  function miniBar(counts, total){
+    if(total===0) return '<div class="mini-bar"></div>';
+    const w = n => (n/total*100).toFixed(1)+'%';
+    return `<div class="mini-bar" title="Работает: ${counts.working}, На ремонте: ${counts.repair}, Списано: ${counts.decommissioned}">
+      <span style="width:${w(counts.working)};background:var(--ok);"></span>
+      <span style="width:${w(counts.repair)};background:var(--warn);"></span>
+      <span style="width:${w(counts.decommissioned)};background:var(--dead);"></span>
+    </div>`;
+  }
+
+  function renderDashboard(){
+    const total = state.devices.length;
+    const c = countByStatus(state.devices);
+    const repairList = allRepairDevices();
+    const dismissedDate = localGetDismissDate();
+    const today = new Date().toISOString().slice(0,10);
+    const showMorningToast = repairList.length>0 && dismissedDate!==today;
+
+    let rows = '';
+    state.municipals.forEach(m=>{
+      const mDevices = devicesOfMunicipal(m.id);
+      const mCount = countByStatus(mDevices);
+      rows += `<tr style="background:#f8fafc;">
+        <td colspan="2"><strong>${escapeHtml(m.name)}</strong></td>
+        <td>${mCount.working}</td><td>${mCount.repair}</td><td>${mCount.decommissioned}</td>
+        <td class="mono">${mDevices.length}</td>
+        <td>${miniBar(mCount, mDevices.length)}</td>
+      </tr>`;
+      settlementsOfMunicipal(m.id).forEach(s=>{
+        const sDevices = devicesOfSettlement(s.id);
+        const sCount = countByStatus(sDevices);
+        rows += `<tr>
+          <td></td><td>${escapeHtml(s.name)}</td>
+          <td>${sCount.working}</td><td>${sCount.repair}</td><td>${sCount.decommissioned}</td>
+          <td class="mono">${sDevices.length}</td>
+          <td>${miniBar(sCount, sDevices.length)}</td>
+        </tr>`;
+      });
+    });
+    if(state.municipals.length===0){
+      rows = `<tr><td colspan="7"><div class="empty-state">Пока нет ни одного филиала. Добавьте его во вкладке «Филиалы и устройства».</div></td></tr>`;
+    }
+
+    return `
+      <div class="page-header">
+        <div>
+          <div class="page-title">Дашборд</div>
+          <div class="page-desc">Сводка по всем муниципальным филиалам и населённым пунктам</div>
+        </div>
+      </div>
+
+      ${repairList.length>0 ? `
+      <div class="alert-banner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        <div>
+          <div class="alert-title">На ремонте: ${repairList.length} устройств${repairList.length===1?'о':'а'}</div>
+          <div class="alert-list">
+            ${repairList.slice(0,6).map(d=>`${TYPE_LABEL[d.type]} <span class="mono">${escapeHtml(d.invNumber)}</span> «${escapeHtml(d.name)}» — ${escapeHtml(d.municipalName)} / ${escapeHtml(d.settlementName)}`).join('<br>')}
+            ${repairList.length>6 ? `<br>и ещё ${repairList.length-6}…` : ''}
+          </div>
+        </div>
+      </div>` : ''}
+
+      <div class="stat-row">
+        <div class="card stat-card"><div class="stat-label">Всего устройств</div><div class="stat-value">${total}</div></div>
+        <div class="card stat-card"><div class="stat-label">Работает</div><div class="stat-value ok">${c.working}</div></div>
+        <div class="card stat-card"><div class="stat-label">На ремонте</div><div class="stat-value warn">${c.repair}</div></div>
+        <div class="card stat-card"><div class="stat-label">Списано</div><div class="stat-value dead">${c.decommissioned}</div></div>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead><tr>
+            <th>Муниципальный филиал</th><th>Населённый пункт</th><th>Работает</th><th>Ремонт</th><th>Списано</th><th>Всего</th><th>Доля статусов</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function renderTree(){
+    if(state.municipals.length===0){
+      return `<div class="empty-tree-hint">Нет филиалов. Нажмите «+ Филиал», чтобы добавить муниципальный филиал.</div>`;
+    }
+    return state.municipals.map(m=>{
+      const collapsed = !!ui.collapsedMunicipals[m.id];
+      const settls = settlementsOfMunicipal(m.id);
+      const mDeviceCount = devicesOfMunicipal(m.id).length;
+      return `
+      <div class="tree-mun">
+        <div class="tree-mun-row ${collapsed?'collapsed':''}" data-toggle-mun="${m.id}">
+          <svg class="chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
+          <span data-select-mun="${m.id}" style="flex:1;">${escapeHtml(m.name)}</span>
+          <span class="tree-count">${mDeviceCount}</span>
+          <div class="tree-actions">
+            <span class="icon-btn btn-sm" data-add-settl="${m.id}" title="Добавить нас. пункт" style="width:22px;height:22px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+            <span class="icon-btn btn-sm" data-edit-mun="${m.id}" style="width:22px;height:22px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>
+            </span>
+            <span class="icon-btn btn-sm" data-del-mun="${m.id}" style="width:22px;height:22px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a1 1 0 01-1 1H7a1 1 0 01-1-1V6"/></svg>
+            </span>
+          </div>
+        </div>
+        ${!collapsed ? `<div class="tree-settl-list">
+          ${settls.length? settls.map(s=>{
+            const sCount = devicesOfSettlement(s.id).length;
+            return `<div class="tree-settl-row ${ui.selectedSettlementId===s.id?'active':''}" data-select-settl="${s.id}">
+              <span style="flex:1;">${escapeHtml(s.name)}</span>
+              <span class="tree-count">${sCount}</span>
+              <div class="tree-actions">
+                <span class="icon-btn btn-sm" data-edit-settl="${s.id}" style="width:20px;height:20px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>
+                </span>
+                <span class="icon-btn btn-sm" data-del-settl="${s.id}" style="width:20px;height:20px;">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a1 1 0 01-1 1H7a1 1 0 01-1-1V6"/></svg>
+                </span>
+              </div>
+            </div>`;
+          }).join('') : '<div class="empty-tree-hint">Нет населённых пунктов</div>'}
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function renderDevices(){
+    let panelTitle = 'Все устройства';
+    let crumb = '';
+    let devices = state.devices.slice();
+    let currentSettlement = null;
+    if(ui.selectedSettlementId){
+      currentSettlement = state.settlements.find(s=>s.id===ui.selectedSettlementId);
+      if(currentSettlement){
+        devices = devicesOfSettlement(currentSettlement.id);
+        const mun = state.municipals.find(m=>m.id===currentSettlement.municipalId);
+        panelTitle = currentSettlement.name;
+        crumb = mun ? escapeHtml(mun.name) : '';
+      }
+    }
+
+    const rows = devices.map(d=>{
+      return `<tr>
+        <td class="mono">${escapeHtml(d.invNumber)}</td>
+        <td><span class="device-type-icon">${icon(d.type)}</span>${escapeHtml(d.name)}</td>
+        <td><span style="color:var(--muted);font-size:11.5px;">${TYPE_LABEL[d.type]}</span></td>
+        <td class="mono">${escapeHtml(d.ip)}</td>
+        <td>${statPill(d.status)}</td>
+        <td>
+          <div style="display:flex;gap:6px;">
+            <span class="icon-btn" data-edit-device="${d.id}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg>
+            </span>
+            <span class="icon-btn" data-del-device="${d.id}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a1 1 0 01-1 1H7a1 1 0 01-1-1V6"/></svg>
+            </span>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    const emptyMsg = state.settlements.length===0
+      ? `<div class="empty-state"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><div>Сначала добавьте муниципальный филиал и населённый пункт слева.</div></div>`
+      : `<div class="empty-state"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><div>Устройств пока нет. Нажмите «Добавить устройство».</div></div>`;
+
+    return `
+      <div class="page-header">
+        <div>
+          <div class="page-title">Филиалы и устройства</div>
+          <div class="page-desc">Структура: муниципальный филиал → населённый пункт → ПК / принтеры</div>
+        </div>
+        <button class="btn btn-ghost" data-add-mun="1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Муниципальный филиал
+        </button>
+      </div>
+      <div class="devices-layout">
+        <div class="card tree-panel">
+          <div class="tree-panel-head"><h3>Структура</h3></div>
+          ${renderTree()}
+        </div>
+        <div class="card">
+          <div class="devices-panel-head">
+            <div>
+              <h3>${escapeHtml(panelTitle)}</h3>
+              ${crumb?`<div class="crumb">${crumb}</div>`:''}
+            </div>
+            <button class="btn btn-accent btn-sm" data-add-device="${ui.selectedSettlementId||''}" ${!ui.selectedSettlementId?'disabled title="Выберите населённый пункт слева"':''}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+              Добавить устройство
+            </button>
+          </div>
+          ${devices.length? `<table>
+            <thead><tr><th>Инв. номер</th><th>Название</th><th>Тип</th><th>IP адрес</th><th>Статус</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>` : emptyMsg}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderExport(){
+    let treeHtml = '';
+    if(state.municipals.length===0){
+      treeHtml = `<div class="empty-tree-hint">Нет данных для экспорта.</div>`;
+    } else {
+      treeHtml = state.municipals.map(m=>{
+        const settls = settlementsOfMunicipal(m.id);
+        const mChecked = settls.length>0 && settls.every(s=>ui.exportSelection[s.id]);
+        return `<div>
+          <div class="export-mun-row">
+            <input type="checkbox" data-check-mun="${m.id}" ${mChecked?'checked':''}>
+            <span>${escapeHtml(m.name)}</span>
+            <span class="tree-count" style="margin-left:auto;">${devicesOfMunicipal(m.id).length} устройств</span>
+          </div>
+          ${settls.map(s=>`<div class="export-settl-row">
+            <input type="checkbox" data-check-settl="${s.id}" ${ui.exportSelection[s.id]?'checked':''}>
+            <span>${escapeHtml(s.name)}</span>
+            <span class="tree-count">${devicesOfSettlement(s.id).length}</span>
+          </div>`).join('')}
+        </div>`;
+      }).join('');
+    }
+    const selectedCount = Object.values(ui.exportSelection).filter(Boolean).length;
+    const totalSettl = state.settlements.length;
+
+    return `
+      <div class="page-header">
+        <div>
+          <div class="page-title">Экспорт в Excel</div>
+          <div class="page-desc">Выберите филиалы для выгрузки или экспортируйте всё сразу</div>
+        </div>
+      </div>
+      <div class="card export-tree">
+        <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+          <strong style="font-size:12px;color:var(--muted);text-transform:uppercase;">Выбор населённых пунктов</strong>
+          <div style="display:flex;gap:8px;">
+            <span class="btn btn-ghost btn-sm" data-select-all-export="1">Выбрать всё</span>
+            <span class="btn btn-ghost btn-sm" data-clear-export="1">Снять всё</span>
+          </div>
+        </div>
+        ${treeHtml}
+      </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+        <button class="btn btn-accent" data-export="1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+          Экспортировать в Excel
+        </button>
+        <span style="font-size:12.5px;color:var(--muted);">
+          ${selectedCount===0 || selectedCount===totalSettl ? 'Будут выгружены все устройства по всем филиалам' : `Выбрано населённых пунктов: ${selectedCount} из ${totalSettl}`}
+        </span>
+      </div>
+    `;
+  }
+
+  // ---------- modal ----------
+  function openModal(title, fieldsHtml, onSubmit, submitLabel){
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `<div class="modal-box">
+      <h3>${title}</h3>
+      <form id="modal-form">${fieldsHtml}
+        <div class="modal-actions">
+          <span class="btn btn-ghost" data-close-modal="1">Отмена</span>
+          <button type="submit" class="btn btn-accent">${submitLabel||'Сохранить'}</button>
+        </div>
+      </form>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', e=>{ if(e.target===overlay) overlay.remove(); });
+    overlay.querySelector('[data-close-modal]').addEventListener('click', ()=>overlay.remove());
+    overlay.querySelector('#modal-form').addEventListener('submit', async e=>{
+      e.preventDefault();
+      const data = {};
+      overlay.querySelectorAll('[data-field]').forEach(inp=>{ data[inp.dataset.field] = inp.value.trim(); });
+      await onSubmit(data);
+      overlay.remove();
+    });
+    setTimeout(()=>{ const f = overlay.querySelector('input,select'); if(f) f.focus(); }, 30);
+  }
+
+  function confirmDelete(msg){ return window.confirm(msg); }
+
+  // ---------- event handlers ----------
+  function attachHandlers(){
+    document.querySelectorAll('[data-toggle-mun]').forEach(el=>{
+      el.addEventListener('click', e=>{
+        if(e.target.closest('.tree-actions') || e.target.closest('[data-select-mun]')) return;
+        const id = el.dataset.toggleMun;
+        ui.collapsedMunicipals[id] = !ui.collapsedMunicipals[id];
+        render();
+      });
+    });
+    document.querySelectorAll('[data-select-settl]').forEach(el=>{
+      el.addEventListener('click', e=>{
+        if(e.target.closest('.tree-actions')) return;
+        ui.selectedSettlementId = el.dataset.selectSettl;
+        render();
+      });
+    });
+
+    // Add municipal
+    document.querySelectorAll('[data-add-mun]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        openModal('Новый муниципальный филиал', `
+          <div class="field"><label>Название филиала</label><input data-field="name" required placeholder="напр. Центральный муниципальный округ"></div>
+        `, async data=>{
+          if(!data.name) return;
+          state.municipals.push({id:uid(), name:data.name});
+          await persist(); render();
+        }, 'Добавить');
+      });
+    });
+    // Edit municipal
+    document.querySelectorAll('[data-edit-mun]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const m = state.municipals.find(x=>x.id===el.dataset.editMun);
+        openModal('Изменить филиал', `
+          <div class="field"><label>Название филиала</label><input data-field="name" required value="${escapeHtml(m.name)}"></div>
+        `, async data=>{
+          if(!data.name) return;
+          m.name = data.name; await persist(); render();
+        }, 'Сохранить');
+      });
+    });
+    // Delete municipal
+    document.querySelectorAll('[data-del-mun]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        const mid = el.dataset.delMun;
+        const settls = settlementsOfMunicipal(mid);
+        const devCount = devicesOfMunicipal(mid).length;
+        if(!confirmDelete(`Удалить филиал вместе с ${settls.length} населёнными пунктами и ${devCount} устройствами?`)) return;
+        const sids = settls.map(s=>s.id);
+        state.devices = state.devices.filter(d=>!sids.includes(d.settlementId));
+        state.settlements = state.settlements.filter(s=>s.municipalId!==mid);
+        state.municipals = state.municipals.filter(m=>m.id!==mid);
+        if(ui.selectedSettlementId && sids.includes(ui.selectedSettlementId)) ui.selectedSettlementId=null;
+        await persist(); render();
+      });
+    });
+    // Add settlement
+    document.querySelectorAll('[data-add-settl]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const mid = el.dataset.addSettl;
+        openModal('Новый населённый пункт', `
+          <div class="field"><label>Название (населённый пункт)</label><input data-field="name" required placeholder="напр. г. Заречное"></div>
+        `, async data=>{
+          if(!data.name) return;
+          state.settlements.push({id:uid(), municipalId:mid, name:data.name});
+          ui.collapsedMunicipals[mid]=false;
+          await persist(); render();
+        }, 'Добавить');
+      });
+    });
+    // Edit settlement
+    document.querySelectorAll('[data-edit-settl]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const s = state.settlements.find(x=>x.id===el.dataset.editSettl);
+        openModal('Изменить населённый пункт', `
+          <div class="field"><label>Название</label><input data-field="name" required value="${escapeHtml(s.name)}"></div>
+        `, async data=>{
+          if(!data.name) return;
+          s.name = data.name; await persist(); render();
+        }, 'Сохранить');
+      });
+    });
+    // Delete settlement
+    document.querySelectorAll('[data-del-settl]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        const sid = el.dataset.delSettl;
+        const devCount = devicesOfSettlement(sid).length;
+        if(!confirmDelete(`Удалить населённый пункт вместе с ${devCount} устройствами?`)) return;
+        state.devices = state.devices.filter(d=>d.settlementId!==sid);
+        state.settlements = state.settlements.filter(s=>s.id!==sid);
+        if(ui.selectedSettlementId===sid) ui.selectedSettlementId=null;
+        await persist(); render();
+      });
+    });
+
+    // Add device
+    document.querySelectorAll('[data-add-device]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const sid = el.dataset.addDevice;
+        if(!sid) return;
+        openDeviceModal(null, sid);
+      });
+    });
+    document.querySelectorAll('[data-edit-device]').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const d = state.devices.find(x=>x.id===el.dataset.editDevice);
+        openDeviceModal(d, d.settlementId);
+      });
+    });
+    document.querySelectorAll('[data-del-device]').forEach(el=>{
+      el.addEventListener('click', async ()=>{
+        const d = state.devices.find(x=>x.id===el.dataset.delDevice);
+        if(!confirmDelete(`Удалить устройство «${d.name}»?`)) return;
+        state.devices = state.devices.filter(x=>x.id!==d.id);
+        await persist(); render();
+      });
+    });
+
+    // Export selection
+    document.querySelectorAll('[data-check-settl]').forEach(el=>{
+      el.addEventListener('change', ()=>{
+        ui.exportSelection[el.dataset.checkSettl] = el.checked;
+        render();
+      });
+    });
+    document.querySelectorAll('[data-check-mun]').forEach(el=>{
+      el.addEventListener('change', ()=>{
+        const settls = settlementsOfMunicipal(el.dataset.checkMun);
+        settls.forEach(s=>{ ui.exportSelection[s.id] = el.checked; });
+        render();
+      });
+    });
+    const selAllBtn = document.querySelector('[data-select-all-export]');
+    if(selAllBtn) selAllBtn.addEventListener('click', ()=>{
+      state.settlements.forEach(s=>ui.exportSelection[s.id]=true); render();
+    });
+    const clearBtn = document.querySelector('[data-clear-export]');
+    if(clearBtn) clearBtn.addEventListener('click', ()=>{
+      ui.exportSelection = {}; render();
+    });
+    const exportBtn = document.querySelector('[data-export]');
+    if(exportBtn) exportBtn.addEventListener('click', doExport);
+  }
+
+  function openDeviceModal(device, settlementId){
+    const isEdit = !!device;
+    openModal(isEdit ? 'Изменить устройство' : 'Новое устройство', `
+      <div class="field"><label>Тип устройства</label>
+        <select data-field="type">
+          <option value="pc" ${device&&device.type==='pc'?'selected':''}>ПК</option>
+          <option value="printer" ${device&&device.type==='printer'?'selected':''}>Принтер</option>
+        </select>
+      </div>
+      <div class="field"><label>Инвентарный номер</label><input class="mono" data-field="invNumber" required value="${device?escapeHtml(device.invNumber):''}" placeholder="ИН-000000"></div>
+      <div class="field"><label>Название устройства</label><input data-field="name" required value="${device?escapeHtml(device.name):''}" placeholder="напр. ПК-Бухгалтерия-01"></div>
+      <div class="field"><label>IP адрес</label><input class="mono" data-field="ip" required value="${device?escapeHtml(device.ip):''}" placeholder="192.168.0.10"></div>
+      <div class="field"><label>Статус</label>
+        <select data-field="status">
+          <option value="working" ${device&&device.status==='working'?'selected':''}>Работает</option>
+          <option value="repair" ${device&&device.status==='repair'?'selected':''}>На ремонте</option>
+          <option value="decommissioned" ${device&&device.status==='decommissioned'?'selected':''}>Списан</option>
+        </select>
+      </div>
+    `, async data=>{
+      if(!data.invNumber || !data.name || !data.ip) return;
+      if(isEdit){
+        Object.assign(device, data);
+      } else {
+        state.devices.push({id:uid(), settlementId, ...data});
+      }
+      await persist(); render();
+    }, isEdit?'Сохранить':'Добавить');
+  }
+
+  // ---------- export ----------
+  function doExport(){
+    const selectedIds = Object.keys(ui.exportSelection).filter(k=>ui.exportSelection[k]);
+    const useAll = selectedIds.length===0;
+    const targetSettlementIds = useAll ? state.settlements.map(s=>s.id) : selectedIds;
+
+    const rows = [['Муниципальный филиал','Населённый пункт','Тип','Инвентарный номер','Название','IP адрес','Статус']];
+    state.devices.forEach(d=>{
+      if(!targetSettlementIds.includes(d.settlementId)) return;
+      const s = state.settlements.find(x=>x.id===d.settlementId);
+      const m = s ? state.municipals.find(x=>x.id===s.municipalId) : null;
+      rows.push([
+        m?m.name:'', s?s.name:'', TYPE_LABEL[d.type], d.invNumber, d.name, d.ip, STATUS[d.status].label
+      ]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:28},{wch:20},{wch:10},{wch:16},{wch:24},{wch:15},{wch:14}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Устройства');
+    const fname = `Инвентаризация_${new Date().toISOString().slice(0,10)}.xlsx`;
+    const wbout = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+    const blob = new Blob([wbout], {type:'application/octet-stream'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- daily notification ----------
+  function localGetDismissDate(){
+    try{ return sessionStorage.getItem(DISMISS_KEY) || null; }catch(e){ return null; }
+  }
+  function localSetDismissDate(){
+    try{ sessionStorage.setItem(DISMISS_KEY, new Date().toISOString().slice(0,10)); }catch(e){}
+  }
+
+  function showMorningToastIfNeeded(){
+    const repairList = allRepairDevices();
+    const today = new Date().toISOString().slice(0,10);
+    if(repairList.length===0) return;
+    if(localGetDismissDate()===today) return;
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      <div>
+        <strong>Утренняя проверка</strong><br>
+        На ремонте: ${repairList.length} устройств${repairList.length===1?'о':'а'}. Подробности — на дашборде.
+      </div>
+      <span class="toast-close">✕</span>
+    `;
+    document.body.appendChild(toast);
+    toast.querySelector('.toast-close').addEventListener('click', ()=>{ toast.remove(); localSetDismissDate(); });
+    setTimeout(()=>{ if(toast.parentNode){ toast.remove(); localSetDismissDate(); } }, 12000);
+  }
+
+  // ---------- nav ----------
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.addEventListener('click', ()=>{ ui.tab = el.dataset.nav; render(); });
+  });
+
+  // ---------- boot ----------
+  (async function boot(){
+    await loadState();
+    render();
+    setTimeout(showMorningToastIfNeeded, 500);
+  })();
+
+})();
+</script>
