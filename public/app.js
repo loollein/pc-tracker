@@ -115,7 +115,128 @@ function statusBadge(status, device = null) {
   return `<span class="badge ${status}">${STATUS_LABELS[status] || status}</span>`;
 }
 
-// Универсальная функция выгрузки произвольного массива устройств в Excel (используется и в Экспорте, и во вкладке Филиалы)
+// ==================== БЫСТРОЕ ПОДКЛЮЧЕНИЕ (RDP / VNC / SSH / WEB) ====================
+function triggerTextFileDownload(filename, content, mimeType = 'text/plain;charset=utf-8') {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 200);
+}
+
+// Генерация .rdp файла (открывается и в Remmina на Linux, и в mstsc на Windows)
+function launchRdpConnect(ip, name = '') {
+  const safeName = String(name || ip).replace(/[^a-zA-Zа-яА-ЯёЁ0-9_-]/g, '_');
+  const rdpContent = [
+    `full address:s:${ip}`,
+    `prompt for credentials:i:1`,
+    `administrative session:i:1`,
+    `screen mode id:i:2`,
+    `desktopwidth:i:1920`,
+    `desktopheight:i:1080`,
+    `session bpp:i:32`,
+    `compression:i:1`,
+    `clipboard:i:1`
+  ].join('\r\n');
+  triggerTextFileDownload(`${safeName}.rdp`, rdpContent, 'application/x-rdp');
+}
+
+// Генерация .remmina профиля для VNC (x11vnc на РЕД ОС / Astra Linux и др.)
+function launchVncConnect(ip, name = '') {
+  const safeName = String(name || ip).replace(/[^a-zA-Zа-яА-ЯёЁ0-9_-]/g, '_');
+  const remminaContent = [
+    `[remmina]`,
+    `name=${name || ip} (VNC)`,
+    `protocol=VNC`,
+    `server=${ip}:5900`,
+    `colordepth=32`,
+    `quality=2`,
+    `scale=1`,
+    `viewmode=1`,
+    `disableencryption=1`
+  ].join('\n');
+  triggerTextFileDownload(`${safeName}.remmina`, remminaContent, 'application/x-remmina');
+}
+
+// Запуск SSH или копирование команды ssh
+function launchSshConnect(ip) {
+  const user = prompt(`Введите логин SSH для ${ip}:`, 'scr');
+  if (!user) return; // Если нажали "Отмена"
+
+  const target = `${user.trim()}@${ip}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(`ssh ${target}`).catch(() => {});
+  }
+  window.location.href = `ssh://${target}`;
+}
+
+// Копирование IP-адреса по клику с всплывающей подсказкой
+function copyIpToClipboard(ip, el) {
+  if (!ip) return;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(ip).then(() => {
+      const orig = el.textContent;
+      el.textContent = '✓ скопирован';
+      el.style.color = '#1a8f4c';
+      setTimeout(() => {
+        el.textContent = orig;
+        el.style.color = '';
+      }, 900);
+    }).catch(() => {});
+  }
+}
+
+// Рендер ячейки IP-адреса с кнопками быстрого подключения
+function renderIpAndQuickConnectCell(d) {
+  if (!d.ip_address) return '—';
+  const ip = escapeHtml(d.ip_address.trim());
+  const nameAttr = escapeHtml(d.name || d.ip_address);
+  const ghost = isGhostDevice(d);
+  const offlineDays = getOfflineDays(d);
+
+  const btnStyle = 'padding:1px 5px; font-size:10.5px; border-radius:4px; border:1px solid var(--line, #cbd5e1); background:var(--bg-alt, #f8fafc); color:var(--ink); cursor:pointer; text-decoration:none; line-height:1.3; font-family:inherit;';
+
+  let quickButtons = '';
+  if (d.type === 'printer' || d.type === 'mfu') {
+    quickButtons = `
+      <a href="http://${ip}" target="_blank" rel="noopener" style="${btnStyle} color:#0284c7; border-color:#bae6fd; background:#f0f9ff;" title="Открыть веб-интерфейс принтера/МФУ (http://${ip})">🌐 Web</a>
+    `;
+  } else if (d.type === 'network') {
+    quickButtons = `
+      <a href="http://${ip}" target="_blank" rel="noopener" style="${btnStyle} color:#0284c7; border-color:#bae6fd; background:#f0f9ff;" title="Открыть веб-морду (http://${ip})">🌐 Web</a>
+      <button type="button" class="js-connect-ssh" data-ip="${ip}" style="${btnStyle}" title="Открыть SSH (ssh://${ip}) и скопировать команду">>_ SSH</button>
+    `;
+  } else {
+    // ПК, СПМ, другое — кнопки RDP, VNC (Remmina) и SSH
+    const linuxHint = isLinuxOs(d.os);
+    quickButtons = `
+      <button type="button" class="js-connect-rdp" data-ip="${ip}" data-name="${nameAttr}" style="${btnStyle} ${!linuxHint ? 'color:#0284c7; border-color:#bae6fd; background:#f0f9ff; font-weight:600;' : ''}" title="Скачать и открыть .rdp (Remmina / MSTSC)">🖥️ RDP</button>
+      <button type="button" class="js-connect-vnc" data-ip="${ip}" data-name="${nameAttr}" style="${btnStyle} ${linuxHint ? 'color:#1a8f4c; border-color:#bbf7d0; background:#f0fdf4; font-weight:600;' : ''}" title="Скачать и открыть профиль .remmina (VNC порт 5900)">👁️ VNC</button>
+      <button type="button" class="js-connect-ssh" data-ip="${ip}" style="${btnStyle}" title="Подключиться по SSH (ssh://${ip})">>_ SSH</button>
+    `;
+  }
+
+  return `
+    <div style="display:flex; align-items:center; gap:5px;">
+      <span title="${d.is_online ? 'В сети (Online)' : 'Не отвечает на пинг'}${d.last_seen ? ' | Был в сети: ' + fmtDate(d.last_seen) : ' | Ни разу не пинговался'}"
+            style="display:inline-block; width:8px; height:8px; border-radius:50%; flex-shrink:0; background:${d.is_online ? '#1a8f4c' : '#cbd5e1'};">
+      </span>
+      <span class="js-copy-ip" data-ip="${ip}" title="Нажмите, чтобы скопировать IP" style="cursor:pointer; border-bottom:1px dotted var(--ink-dim);">${ip}</span>
+    </div>
+    ${ghost ? `<div title="Не выходил на связь ${offlineDays} дн." style="font-size:11px; color:#6366f1; font-weight:600; margin-top:2px;">👻 ${offlineDays} дн. офлайн</div>` : ''}
+    <div style="display:flex; flex-wrap:wrap; gap:3px; margin-top:4px;">
+      ${quickButtons}
+    </div>
+  `;
+}
+
+// Универсальная функция выгрузки произвольного массива устройств в Excel
 async function exportDevicesToExcelFile(devicesToExport, filenamePrefix = 'Выгрузка_Техники') {
   if (!devicesToExport || devicesToExport.length === 0) {
     alert('В выбранном списке нет устройств для выгрузки.');
@@ -179,7 +300,6 @@ async function exportDevicesToExcelFile(devicesToExport, filenamePrefix = 'Вы�
   saveAs(blob, fname);
 }
 
-// Формирует мини-бейджи разбивки по типам техники ("💻 ПК: 8 | 🖨️ Принт: 2...")
 function renderTypeBreakdownPills(devicesList) {
   if (!devicesList || devicesList.length === 0) return '';
   const counts = { pc: 0, printer: 0, mfu: 0, network: 0, spm: 0, sempl: 0 };
@@ -203,7 +323,6 @@ function renderTypeBreakdownPills(devicesList) {
   return pills.join(' ');
 }
 
-// Формирует индикатор сетевого здоровья ("🟢 12/15 в сети" или "🚨 0/8 нет связи")
 function renderNetworkHealthPill(devicesList, anyEverScanned) {
   const withIp = (devicesList || []).filter(d => d.ip_address && d.status !== 'decommissioned');
   if (withIp.length === 0) {
@@ -843,8 +962,7 @@ function renderSettlementStatsTable(settlements, settlementOnlineMap = {}) {
   `;
 }
 
-// ==================== ПРОКАЧАННАЯ ВКЛАДКА «ФИЛИАЛЫ» ====================
-// Храним состояние развернутых филиалов между перерисовками
+// ==================== ВКЛАДКА «ФИЛИАЛЫ» ====================
 if (typeof window._expandedBranches === 'undefined') {
   window._expandedBranches = new Set();
 }
@@ -859,7 +977,6 @@ async function renderBranchesList() {
 
   const anyEverScanned = allDevices.some(d => d.last_seen);
 
-  // Группируем устройства по филиалам и населённым пунктам для мгновенного подсчета типов и онлайна
   const devicesByBranch = {};
   const devicesBySettlement = {};
   for (const d of allDevices) {
@@ -886,7 +1003,6 @@ async function renderBranchesList() {
     <div class="toolbar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:16px;">
       <input type="text" id="branchSearch" placeholder="Поиск по названию, ответственному, телефону или пункту..." style="width:100%; max-width:440px;">
       
-      <!-- Панель групповых операций с выбранными населенными пунктами -->
       <div id="bulkSettlementActions" style="display:none; gap:8px; align-items:center; background:#fef3c7; border:1px solid #f59e0b; padding:6px 12px; border-radius:8px;">
         <span style="font-size:13px; font-weight:600; color:#92400e;">Выбрано пунктов: <span id="selectedSettlementsCount">0</span></span>
         <button type="button" class="btn small primary" id="bulkExportSettlementsBtn">⬇ Скачать опись Excel</button>
@@ -995,7 +1111,6 @@ async function renderBranchesList() {
     }
   });
 
-  // Кнопки "Развернуть все" / "Свернуть все"
   document.getElementById('expandAllBranchesBtn').onclick = () => {
     branches.forEach(b => window._expandedBranches.add(b.id));
     document.querySelectorAll('.branch-panel').forEach(panel => {
@@ -1016,7 +1131,6 @@ async function renderBranchesList() {
     });
   };
 
-  // Групповые операции по выбранным чекбоксам населённых пунктов
   document.getElementById('bulkClearSettlementsBtn').onclick = () => {
     treeContainer.querySelectorAll('.settlement-checkbox:checked').forEach(cb => cb.checked = false);
     updateBulkSettlementBar();
@@ -1053,7 +1167,6 @@ async function renderBranchesList() {
     }, 'Перенести');
   };
 
-  // Делегирование всех кнопок внутри дерева филиалов
   treeContainer.addEventListener('click', async (e) => {
     if (e.target.classList.contains('settlement-checkbox')) {
       e.stopPropagation();
@@ -1158,7 +1271,6 @@ async function renderBranchesList() {
     }
   });
 
-  // Живой поиск с автоматическим разворотом найденных филиалов
   document.getElementById('branchSearch').oninput = (e) => {
     const val = e.target.value.trim().toLowerCase();
     document.querySelectorAll('.branch-panel').forEach(panel => {
@@ -1185,7 +1297,6 @@ async function renderBranchesList() {
   };
 }
 
-// ==================== Вспомогательные функции для модалок в филиалах ====================
 function openAddSettlementModal(branchId) {
   openModal('Новый населённый пункт', `
     <div class="field"><label>Название</label><input name="name" required autofocus placeholder="Например: г. Заречное"></div>
@@ -1704,6 +1815,7 @@ async function renderHistoryPage() {
                 const badgeColor = 
                   h.action === 'CREATED' ? '#1a8f4c' :
                   h.action === 'UPDATED' ? '#0284c7' :
+                  h.action === 'BACKUP' ? '#7c3aed' :
                   h.action === 'TRASHED' ? '#b8730a' :
                   h.action === 'DELETED' ? '#dc3545' : '#6b7488';
 
@@ -1839,7 +1951,7 @@ function devicesTable(devices, { showLocation }) {
         <th style="width:80px;">Тип</th>
         <th style="width:80px;">Инв. номер</th>
         <th style="width:80px;">Название</th>
-        <th style="width:130px;">IP-адрес</th>
+        <th style="width:155px;">IP / Подключение</th>
         <th style="width:80px;">ОС</th>
         <th style="width:80px;">Софт</th>
         <th style="width:80px;">СЗИ</th>
@@ -1850,37 +1962,28 @@ function devicesTable(devices, { showLocation }) {
         <th style="width:80px;"></th>
       </tr></thead>
       <tbody>
-        ${devices.map((d) => {
-          const ghost = isGhostDevice(d);
-          const offlineDays = getOfflineDays(d);
-          return `
-            <tr data-device-id="${d.id}">
-              <td style="text-align: center;"><input type="checkbox" class="device-checkbox" value="${d.id}"></td>
-              <td>${TYPE_LABELS[d.type] || d.type}</td>
-              <td class="mono">${escapeHtml(d.inventory_number)}</td>
-              <td>${escapeHtml(d.name)}</td>
-              <td class="mono" style="white-space:nowrap;">
-                ${d.ip_address ? `
-                  <span title="${d.is_online ? 'В сети (Online)' : 'Не отвечает на пинг'}${d.last_seen ? ' | Был в сети: ' + fmtDate(d.last_seen) : ' | Ни разу не пинговался'}"
-                        style="display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; background:${d.is_online ? '#1a8f4c' : '#cbd5e1'};">
-                  </span>${escapeHtml(d.ip_address)}
-                  ${ghost ? `<br><span title="Не выходил на связь ${offlineDays} дн." style="font-size:11px; color:#6366f1; font-weight:600;">👻 ${offlineDays} дн. офлайн</span>` : ''}
-                ` : '—'}
-              </td>
-              <td>${escapeHtml(d.os) || '—'}</td>
-              <td>${escapeHtml(d.software) || '—'}</td>
-              <td>${escapeHtml(d.security) || '—'}</td>
-              <td>${escapeHtml(d.domain_joined) || '—'}</td>
-              ${showLocation ? `<td>${escapeHtml(d.branch_name)} / ${escapeHtml(d.settlement_name)}</td>` : ''}
-              <td>${escapeHtml(d.notes) || '—'}</td>
-              <td>${statusBadge(d.status, d)}</td>
-              <td style="white-space:nowrap;">
-                <button class="btn small edit-device-btn">Изменить</button>
-                <button class="btn small danger delete-device-btn" title="Переместить в корзину">В корзину</button>
-              </td>
-            </tr>
-          `;
-        }).join('')}
+        ${devices.map((d) => `
+          <tr data-device-id="${d.id}">
+            <td style="text-align: center;"><input type="checkbox" class="device-checkbox" value="${d.id}"></td>
+            <td>${TYPE_LABELS[d.type] || d.type}</td>
+            <td class="mono">${escapeHtml(d.inventory_number)}</td>
+            <td>${escapeHtml(d.name)}</td>
+            <td class="mono" style="white-space:nowrap;">
+              ${renderIpAndQuickConnectCell(d)}
+            </td>
+            <td>${escapeHtml(d.os) || '—'}</td>
+            <td>${escapeHtml(d.software) || '—'}</td>
+            <td>${escapeHtml(d.security) || '—'}</td>
+            <td>${escapeHtml(d.domain_joined) || '—'}</td>
+            ${showLocation ? `<td>${escapeHtml(d.branch_name)} / ${escapeHtml(d.settlement_name)}</td>` : ''}
+            <td>${escapeHtml(d.notes) || '—'}</td>
+            <td>${statusBadge(d.status, d)}</td>
+            <td style="white-space:nowrap;">
+              <button class="btn small edit-device-btn">Изменить</button>
+              <button class="btn small danger delete-device-btn" title="Переместить в корзину">В корзину</button>
+            </td>
+          </tr>
+        `).join('')}
       </tbody>
     </table>
   `;
@@ -1897,6 +2000,7 @@ function bindDeviceRowActions(devices, onChange) {
       });
     };
   });
+
   document.querySelectorAll('.delete-device-btn').forEach((btn) => {
     btn.onclick = async () => {
       const id = btn.closest('tr').dataset.deviceId;
@@ -1905,6 +2009,23 @@ function bindDeviceRowActions(devices, onChange) {
       await api(`/api/devices/${id}`, { method: 'DELETE' });
       onChange();
     };
+  });
+
+  // Обработчики быстрого копирования IP и подключения RDP / VNC / SSH
+  document.querySelectorAll('.js-copy-ip').forEach((el) => {
+    el.onclick = () => copyIpToClipboard(el.dataset.ip, el);
+  });
+
+  document.querySelectorAll('.js-connect-rdp').forEach((btn) => {
+    btn.onclick = () => launchRdpConnect(btn.dataset.ip, btn.dataset.name);
+  });
+
+  document.querySelectorAll('.js-connect-vnc').forEach((btn) => {
+    btn.onclick = () => launchVncConnect(btn.dataset.ip, btn.dataset.name);
+  });
+
+  document.querySelectorAll('.js-connect-ssh').forEach((btn) => {
+    btn.onclick = () => launchSshConnect(btn.dataset.ip);
   });
 }
 

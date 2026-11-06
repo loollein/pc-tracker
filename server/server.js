@@ -1,7 +1,9 @@
 // server/server.js
 const express = require('express');
 const path = require('path');
-const db = require('./db'); // <-- Подключили БД для журнала событий
+const fs = require('fs');
+const os = require('os');
+const db = require('./db');
 
 const branchesRouter = require('./routes/branches');
 const settlementsRouter = require('./routes/settlements');
@@ -28,7 +30,7 @@ app.get('/api/history', (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 150;
     const history = db.prepare(`
       SELECT h.*, 
-             COALESCE(d.name, 'Удалённое устройство') AS device_name, 
+             COALESCE(d.name, 'Системное событие / Удалено') AS device_name, 
              d.inventory_number,
              sb.name AS settlement_name,
              mb.name AS branch_name
@@ -45,7 +47,33 @@ app.get('/api/history', (req, res) => {
   }
 });
 
-// 2. Ручной запуск сканирования подсетей по кнопке с фронтенда
+// 2. Горячий бэкап базы данных SQLite (безопасно при включенном WAL)
+app.get('/api/backup', async (req, res) => {
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const downloadName = `tracker_backup_${dateStr}.db`;
+  const tempFilePath = path.join(os.tmpdir(), `tracker_backup_${Date.now()}.db`);
+
+  try {
+    await db.backup(tempFilePath);
+
+    db.prepare(`
+      INSERT INTO device_history (device_id, action, description)
+      VALUES (NULL, 'BACKUP', ?)
+    `).run(`Выгружена резервная копия базы данных (${downloadName})`);
+
+    res.download(tempFilePath, downloadName, (err) => {
+      fs.unlink(tempFilePath, () => {});
+      if (err && !res.headersSent) {
+        res.status(500).json({ error: 'Ошибка отправки файла бэкапа' });
+      }
+    });
+  } catch (err) {
+    fs.unlink(tempFilePath, () => {});
+    res.status(500).json({ error: 'Ошибка создания резервной копии БД: ' + err.message });
+  }
+});
+
+// 3. Ручной запуск сканирования подсетей по кнопке с фронтенда
 app.post('/api/scan', async (req, res) => {
   if (isScanning()) {
     return res.status(409).json({ error: 'Сканирование уже идёт, подождите...' });
@@ -66,12 +94,12 @@ setInterval(() => {
 // Отдаём фронтенд (статические файлы)
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// 3. Все остальные несуществующие /api/* строго возвращают 404 JSON
+// 4. Все остальные несуществующие /api/* строго возвращают 404 JSON
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
-// 4. SPA-роутинг для всех остальных GET-запросов
+// 5. SPA-роутинг для всех остальных GET-запросов
 app.get(/^\/(?!api\/).*/, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });

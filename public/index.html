@@ -21,12 +21,17 @@
         <a href="#/branches" class="nav-link" data-route="branches">Филиалы</a>
         <a href="#/devices" class="nav-link" data-route="devices">Все устройства</a>
         <a href="#/export" class="nav-link" data-route="export">Экспорт в Excel</a>
-        <a href="http://10.22.77.13:8080" class="nav-link" target="_blank">📚 База знаний</a>
         <a href="#/history" class="nav-link" data-route="history">📜 Журнал событий</a>
         <a href="#/trash" class="nav-link" data-route="trash">🗑️ Корзина <span id="trashBadge" style="font-size:12px; opacity:0.8;"></span></a>
+        <a href="http://10.22.77.13:8080" class="nav-link" target="_blank">📚 База знаний</a>
       </nav>
 
-      <div class="sidebar-footer">Всего устройств в системе: <span id="sidebarTotal">—</span></div>
+      <div class="sidebar-footer">
+        <div style="margin-bottom: 10px;">Всего устройств в системе: <span id="sidebarTotal">—</span></div>
+        <a href="/api/backup" class="btn small" style="display:block; text-align:center; text-decoration:none; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); padding:6px 10px; border-radius:6px;">
+          💾 Скачать бэкап БД
+        </a>
+      </div>
     </aside>
 
     <main class="content">
