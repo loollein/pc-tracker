@@ -29,12 +29,17 @@ router.post('/', (req, res) => {
     WHERE settlement_branch_id = ? AND inventory_number = ?
   `);
 
+  const insertHistory = db.prepare(`
+    INSERT INTO device_history (device_id, action, description)
+    VALUES (?, ?, ?)
+  `);
+
   const processImport = db.transaction((importRows) => {
     let insertedDevices = 0, updatedDevices = 0, newBranches = 0, newSettlements = 0;
     const errors = [];
 
     importRows.forEach((row, index) => {
-      const rowNumber = index + 2; // +2 учитывает шапку таблицы Excel и 0-индексацию
+      const rowNumber = index + 2;
 
       const branchName = String(row['Муниципальный филиал'] || '').trim();
       const settlementName = String(row['Населённый пункт'] || '').trim();
@@ -49,7 +54,6 @@ router.post('/', (req, res) => {
       const notes = String(row['Примечание'] || '').trim() || null;
       const rawStatus = String(row['Статус'] || '').trim().toLowerCase();
 
-      // Проверка обязательных полей с фиксацией ошибки в отчете
       if (!branchName || !settlementName || !invNumber || !name) {
         errors.push({
           row: rowNumber,
@@ -92,9 +96,11 @@ router.post('/', (req, res) => {
         const existing = getDevice.get(settlementId, invNumber);
         if (existing) {
           updateDevice.run(finalType, name, ip, os, software, security, domain_joined, notes, finalStatus, settlementId, invNumber);
+          insertHistory.run(existing.id, 'UPDATED', 'Обновлено при импорте из Excel');
           updatedDevices++;
         } else {
-          insertDevice.run(settlementId, finalType, invNumber, name, ip, os, software, security, domain_joined, notes, finalStatus);
+          const info = insertDevice.run(settlementId, finalType, invNumber, name, ip, os, software, security, domain_joined, notes, finalStatus);
+          insertHistory.run(info.lastInsertRowid, 'CREATED', `Создано при импорте из Excel (${settlementName})`);
           insertedDevices++;
         }
       } catch (err) {
@@ -106,14 +112,14 @@ router.post('/', (req, res) => {
       }
     });
 
-    return { 
-      successCount: insertedDevices + updatedDevices, 
-      insertedDevices, 
-      updatedDevices, 
-      newBranches, 
-      newSettlements, 
-      errorCount: errors.length, 
-      errors 
+    return {
+      successCount: insertedDevices + updatedDevices,
+      insertedDevices,
+      updatedDevices,
+      newBranches,
+      newSettlements,
+      errorCount: errors.length,
+      errors
     };
   });
 
